@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include "gputimer.h"
+#include <string>
 
-#define NUM_THREADS 1000000
+#define NUM_THREADS 10000000
 #define ARRAY_SIZE  100
 
 #define BLOCK_WIDTH 1000
@@ -35,6 +36,9 @@ __global__ void increment_atomic(int *g)
 
 int main(int argc,char **argv)
 {   
+    if (argc < 2) return 1;
+    std::string mode = std::string(argv[1]);
+
     GpuTimer timer;
     printf("%d total threads in %d blocks writing into %d array elements\n",
            NUM_THREADS, NUM_THREADS / BLOCK_WIDTH, ARRAY_SIZE);
@@ -50,8 +54,18 @@ int main(int argc,char **argv)
 
     // launch the kernel - comment out one of these
     timer.Start();
-    // increment_naive<<<NUM_THREADS/BLOCK_WIDTH, BLOCK_WIDTH>>>(d_array);
-    increment_atomic<<<NUM_THREADS/BLOCK_WIDTH, BLOCK_WIDTH>>>(d_array);
+    
+    if (mode.compare("naive") == 0) {
+        increment_naive<<<NUM_THREADS/BLOCK_WIDTH, BLOCK_WIDTH>>>(d_array);
+    }
+    else if (mode.compare("atomic") == 0) {
+        increment_atomic<<<NUM_THREADS/BLOCK_WIDTH, BLOCK_WIDTH>>>(d_array);
+    }
+    else {
+        printf("The argument must be either naive or atomic\n");
+        return 1;
+    }
+
     timer.Stop();
     
     // copy back the array of sums from GPU and print
